@@ -1,56 +1,63 @@
 #!/usr/bin/env python
 import rospy
 import os, sys
-# sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib", "cnos"))
-# import cnos
 import numpy as np
+import cv2
 from sensor_msgs.msg import Image
+from PIL import Image as PILImage
 from cv_bridge import CvBridge, CvBridgeError
-
 import subprocess
-import json
 
+# Cnos
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib", "cnos"))
+import cnos
+from cnos.src.scripts.inference_custom import run_inference as run_inference_custom_without_model
+# from cnos.src.scripts.create_template_custom import run_inference as create_template
+# from cnos.src.scripts.run_inference_from_custom_template import run_inference as run_inference_custom_with_model
 class Cnos_Sub:
     def __init__(self):
         # Initializing node
         rospy.init_node("cnos_sub")
         rospy.loginfo("Initialised cnos node")
 
-        self.img_sub = rospy.Subscriber('in_img_topic', Image, queue_size=10, callback=self.img_callback)
-        self.img_pub = rospy.Publisher('out_img_topic', Image, queue_size=10)
+        self.img_sub = rospy.Subscriber('/usb_cam/image_raw', Image, queue_size=10, callback=self.img_callback)
         self.bridge = CvBridge()
-        self.rgb_path = None
-        self.dir_path = None
 
-        # RGB path is just for testing
         self.cnos_path = os.path.join(os.path.dirname(__file__), "..", "lib", "cnos")
         self.template_dir = os.path.join(self.cnos_path, "tmp", "custom_dataset")
-        self.rgb_path = os.path.join(self.cnos_path, "media", "hsr","test_image1.png")
+        self.rgb_path = os.path.join(self.cnos_path, "media","temp.png")
         self.stability_sore_thresh = 0.5
         self.max_num_dets = 1
         self.confg_threshold = 0.5
-        # In order to save the model (can't be tested since my imports don't work)
-        # self.model = cnos.src.scripts.create_template_custom.run_inference(self.template_dir, self.stability_sore_thresh, return_model=True)
+        self.num_max_dets = 1
+        #os.chdir(self.cnos_path)
+        #self.model, self.ref_feats = create_template(self.template_dir, self.stability_sore_thresh, return_model=True)
+        self.multiple_runs = False
+        self.inference_flag = False
 
     def img_callback(self, msg):
         try:
-            img = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+            img = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+            img = PILImage.fromarray(np.uint8(img))
+            img.save(self.rgb_path)
         except CvBridgeError as e:
             print(e)
 
-        # If self.model can be saved, try this:
-        # cnos.src.scripts.run_inference_from_custom_template.run_inference(self.template_dir, img, 3, 0.5, self.model)
-        # If it doesn't there is also no need to run create_template_custom
-        # (change rgb_path to rgb in run_inference)
-        # cnos.src.scripts.inference_custom.run_inference(self.template_dir, img, self.num_max_dets, self.confg_threshold, self.stability_sore_thresh)
-
-        command = ["python", "-m", "src.scripts.inference_custom", "--template_dir", self.template_dir, "--rgb_path", self.rgb_path, \
-                    "--stability_score_thresh", str(self.thresh)]
-        os.chdir(self.cnos_path)
-        proc = subprocess.run(command)
+        if self.multiple_runs is False and self.inference_flag is False:
+            print("Running inference.")
+            self.inference_flag = True
+            os.chdir(self.cnos_path)
+            # run_inference_custom_with_model(self.template_dir, self.rgb_path, 3, 0.5, self.model, self.ref_feats)
+            run_inference_custom_without_model(self.template_dir, self.rgb_path, self.num_max_dets, self.confg_threshold, self.stability_sore_thresh)
+            self.inference_flag = False
 
 
 if __name__ == '__main__':
     
     cnos_node = Cnos_Sub()
+    try:
+        rospy.spin()
+    except KeyboardInterrupt:
+        print("Shutting down")
+        cv2.destroyAllWindows()
 

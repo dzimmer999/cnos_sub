@@ -78,7 +78,7 @@ def visualize(rgb, detection_array, save_path="./tmp/tmp.png"):
     concat.paste(prediction, (img.shape[1], 0))
     return concat
         
-def run_inference(template_dir, rgb, num_max_dets, conf_threshold, model):
+def run_inference(template_dir, rgb, num_max_dets, conf_threshold, model, ref_feats_list):
     
     metric = Similarity()
     
@@ -87,13 +87,13 @@ def run_inference(template_dir, rgb, num_max_dets, conf_threshold, model):
 
     start_time = time.time()
     detection_array = []
-    for pt in pt_list:
+    for pt, ref_feats in zip(pt_list, ref_feats_list):
         print(f"{pt=}")
         templates = torch.load(f"{template_dir}/cnos_results/{pt}")
         print(f"Time passed since start (loading templates done) {pt}: t = {round(time.time() - start_time, 2)}s")
-        ref_feats = model.descriptor_model.compute_features(
-                        templates, token_name="x_norm_clstoken"
-                    )
+        #ref_feats = model.descriptor_model.compute_features(
+        #                templates, token_name="x_norm_clstoken"
+        #           )
         print(f"Time passed since start (model generated) t = {round(time.time() - start_time, 2)}s")
         logging.info(f"Ref feats: {ref_feats.shape}")
         

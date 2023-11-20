@@ -67,10 +67,11 @@ def visualize(rgb, detection_array, save_path="./tmp/tmp.png"):
             img[mask, 2] = alpha*b + (1 - alpha)*img[mask, 2]   
             img[edge, :] = 255
 
+    
     img = Image.fromarray(np.uint8(img))
     img.save(save_path)
     prediction = Image.open(save_path)
-    
+    prediction.show()
     # concat side by side in PIL
     img = np.array(img)
     concat = Image.new('RGB', (img.shape[1] + prediction.size[0], img.shape[0]))
@@ -143,6 +144,7 @@ def run_inference(template_dir, rgb_path, num_max_dets, conf_threshold, stabilit
         print(f"Running inference (n={i}/{n}, t = {round(time.time() - start_time, 2)}s)")
         # run inference
         rgb = Image.open(rgb_path).convert("RGB")
+        #rgb = rgb_path
         detections = model.segmentor_model.generate_masks(np.array(rgb))
         detections = Detections(detections)
         decriptors = model.descriptor_model.forward(np.array(rgb), detections)

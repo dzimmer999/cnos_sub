@@ -68,7 +68,8 @@ def run_inference(template_dir, stability_score_thresh, return_model=False):
     template_list = os.listdir(template_dir)
     png_list = [template_img for template_img in template_list if ".png" in template_img]
     n = max([int(template_img.split("_")[1].split(".")[0]) for template_img in png_list])
-    
+    ref_feats_list = []
+
     for i in range(n):
         i+=1
 
@@ -95,11 +96,17 @@ def run_inference(template_dir, stability_score_thresh, return_model=False):
         templates = proposal_processor(images=templates, boxes=boxes)
         
         save_image(templates, f"{template_dir}/cnos_results/templates_test_{i}.png", nrow=7)
+
+        ref_feats = model.descriptor_model.compute_features(
+                        templates, token_name="x_norm_clstoken")
+        ref_feats_list.append(ref_feats)
+
+        logging.info(f"Ref feats: {ref_feats.shape}")
         
         torch.save(templates, f"{template_dir}/cnos_results/templates_test_{i}.pt")
         
     if return_model is True:
-        return model
+        return model, ref_feats_list
 
         
 
