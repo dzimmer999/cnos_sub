@@ -50,6 +50,11 @@ class Cnos_Sub:
             # run_inference_custom_with_model(self.template_dir, self.rgb_path, 3, 0.5, self.model, self.ref_feats)
             run_inference_custom_without_model(self.template_dir, self.rgb_path, self.num_max_dets, self.confg_threshold, self.stability_sore_thresh)
             self.inference_flag = False
+        else:
+            os.chdir(self.cnos_path)
+            # run_inference_custom_with_model(self.template_dir, self.rgb_path, 3, 0.5, self.model, self.ref_feats)
+            run_inference_custom_without_model(self.template_dir, self.rgb_path, self.num_max_dets, self.confg_threshold, self.stability_sore_thresh)
+            
 
 
 if __name__ == '__main__':
